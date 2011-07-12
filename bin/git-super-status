@@ -71,7 +71,8 @@ sub unpushed_commits {
 }
 
 sub unmerged_branches {
-   split /\n/, qx(git branch --no-color -a --no-merged master)
+   chomp(my $master = qx(git config super-status.master));
+   split /\n/, qx(git branch --no-color -a --no-merged $master)
 }
 
 sub unreleased_commits {
