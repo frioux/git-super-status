@@ -96,7 +96,7 @@ END
 print header();
 for my $repo_info (@$data) {
    state $i = 0;
-   print "\nRepository Name                          D !TP !PC  !MB  !RC   I\n\n"
+   print "\nRepository Name                          D !TP !PC !MB !RC   I\n\n"
       if $i % 10 == 0;
 
    my $dir = pushd($repo_info->{path});
@@ -109,7 +109,7 @@ for my $repo_info (@$data) {
    say sprintf
    #repo   D !TP !PC !MB !RC   I";
    '%40s %1s %3s %3s %3s %3s %3s',
-   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', scalar @unpushed || '', scalar @unmerged || '', scalar @unreleased || '', '', '';
+   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', scalar @unpushed || '', scalar @unmerged || '', scalar @unreleased || '', '';
    $i++;
 }
 
