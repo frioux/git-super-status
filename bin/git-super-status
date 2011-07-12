@@ -73,6 +73,12 @@ sub unmerged_branches {
    split /\n/, qx(git branch --no-color -a --no-merged master)
 }
 
+sub unreleased_commits {
+   return (split /\n/, qx(git log --oneline --no-color )) unless split /\n/, qx(git tag);
+   chomp(my $last_tag = qx(git describe master --tags --abbrev=0));
+   split /\n/, qx(git log $last_tag..master --oneline --no-color )
+}
+
 sub header {
 <<'END';
 D      dirty?
@@ -99,10 +105,11 @@ for my $repo_info (@$data) {
    my @untracked = get_not_tracked();
    my @unpushed = unpushed_commits(get_tracked());
    my @unmerged = unmerged_branches();
+   my @unreleased = unreleased_commits();
    say sprintf
    #repo   D !TP !PC !MB !RC   I";
    '%40s %1s %3s %3s %3s %3s %3s',
-   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', scalar @unpushed || '', scalar @unmerged || '', '', '', '';
+   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', scalar @unpushed || '', scalar @unmerged || '', scalar @unreleased || '', '', '';
    $i++;
 }
 
