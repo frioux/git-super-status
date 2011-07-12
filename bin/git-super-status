@@ -94,6 +94,42 @@ END
 #    12345678901234567890123456789012345678901234567890123456789012345678901234567890
 #             1         2         3         4         5         6         7         8
 print header();
+
+sub for_summary {
+   my %data = @_;
+
+   return (
+      name       => $data{name},
+      dirty      => scalar @{$data{dirty}},
+      untracked  => scalar @{$data{untracked}},
+      unpushed   => scalar @{$data{unpushed}},
+      unmerged   => scalar @{$data{unmerged}},
+      unreleased => scalar @{$data{unreleased}},
+   )
+}
+
+sub hide_zeros {
+   my %data = @_;
+
+   return (
+      name       => $data{name},
+      dirty      => $data{dirty}      || '',
+      untracked  => $data{untracked}  || '',
+      unpushed   => $data{unpushed}   || '',
+      unmerged   => $data{unmerged}   || '',
+      unreleased => $data{unreleased} || '',
+   )
+}
+
+sub fromat {
+   my %data = @_;
+
+   sprintf
+      #repo   D !TP !PC !MB !RC   I";
+      '%40s %1s %3s %3s %3s %3s %3s',
+      format_repo_name($data{name}), $data{dirty}, $data{untracked}, $data{unpushed}, $data{unmerged}, $data{unreleased}, '';
+}
+
 for my $repo_info (@$data) {
    state $i = 0;
    print "\nRepository Name                          D !TP !PC !MB !RC   I\n\n"
@@ -101,15 +137,17 @@ for my $repo_info (@$data) {
 
    my $dir = pushd($repo_info->{path});
 
-   my @dirty = get_dirty();
-   my @untracked = get_not_tracked();
-   my @unpushed = unpushed_commits(get_tracked());
-   my @unmerged = unmerged_branches();
-   my @unreleased = unreleased_commits();
-   say sprintf
-   #repo   D !TP !PC !MB !RC   I";
-   '%40s %1s %3s %3s %3s %3s %3s',
-   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', scalar @unpushed || '', scalar @unmerged || '', scalar @unreleased || '', '';
+   my %data = (
+      name       => $repo_info->{name},
+      dirty      => [ get_dirty() ],
+      untracked  => [ get_not_tracked() ],
+      unpushed   => [ unpushed_commits(get_tracked()) ],
+      unmerged   => [ unmerged_branches() ],
+      unreleased => [ unreleased_commits() ],
+   );
+
+   say fromat(hide_zeros(for_summary(%data)));
+
    $i++;
 }
 
