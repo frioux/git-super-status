@@ -7,6 +7,7 @@ use YAML::XS 'LoadFile';
 use File::pushd;
 use Term::ANSIColor;
 use Getopt::Long;
+use List::Util 'first';
 
 my $data = LoadFile('/home/frew/.gitgot');
 our %config = map { split /\n/, s/super-status\.//r, 2 } split /\0/, qx(git config -z --get-regexp super-status);
@@ -96,11 +97,13 @@ my $header      = $config{header}      // 0;
 my $color       = $config{color}       // 0;
 my $multiheader = $config{multiheader} // 1;
 my $pretty      = $config{pretty}      // 0;
+my $skip_good   = $config{'skip-good'} // 0;
 
 GetOptions(
    'header|h'     => \$header,
    'multiheader!' => \$multiheader,
    'color!'       => \$color,
+   'skip-good!'   => \$skip_good,
    'pretty!'      => \$pretty,
 );
 
@@ -193,6 +196,7 @@ for my $repo_info (@$data) {
    );
 
    %data = for_summary(%data);
+   next if $skip_good && !first { $_ } map $data{$_}, qw(dirty untracked unpushed unmerged unreleased);
    %data = hide_zeros(%data) if $pretty;
    %data = pre_color_sprintf(%data);
    %data = with_color(%data) if $color;
