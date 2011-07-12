@@ -11,8 +11,6 @@ use Getopt::Long;
 my $data = LoadFile('/home/frew/.gitgot');
 our %config = map { split /\n/, s/super-status\.//r, 2 } split /\0/, qx(git config -z --get-regexp super-status);
 
-use Devel::Dwarn;
-
 {
    my $re = sprintf q<
       ^
@@ -183,6 +181,7 @@ for my $repo_info (@$data) {
 
    my $dir = pushd($repo_info->{path});
    local %config = map { split /\n/, s/super-status\.//r, 2 } split /\0/, qx(git config -z --get-regexp super-status);
+   local $config{master} = 'master' unless $config{master};
 
    my %data = (
       name       => $repo_info->{name},
