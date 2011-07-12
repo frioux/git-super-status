@@ -54,7 +54,7 @@ sub get_not_tracked {
 
 sub get_tracked {
    map {
-      if (/^\*?\s+(\S+)\s+[a-f0-9]{7}\s\[(\S+)\]/) {
+      if (/^\*?\s+(\S+)\s+[a-f0-9]{7}\s\[(\S+)(?::.*)?\]/) {
          [ $1 => $2 ]
       } else {
          ()
@@ -68,7 +68,7 @@ sub unpushed_commits {
    map {
       my ($a, $b) = @$_;
       my $cmd = qq(git log $b..$a --oneline --no-color );
-      $cmd, split /\n/, qx($cmd)
+      split /\n/, qx($cmd)
    } @tracked
 }
 
