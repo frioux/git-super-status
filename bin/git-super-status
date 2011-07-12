@@ -69,6 +69,10 @@ sub unpushed_commits {
    } @tracked
 }
 
+sub unmerged_branches {
+   split /\n/, qx(git branch --no-color -a --no-merged master)
+}
+
 sub header {
 <<'END';
 D      dirty?
@@ -94,10 +98,11 @@ for my $repo_info (@$data) {
    my @dirty = get_dirty();
    my @untracked = get_not_tracked();
    my @unpushed = unpushed_commits(get_tracked());
+   my @unmerged = unmerged_branches();
    say sprintf
    #repo   D !TP !PC !MB !RC   I";
    '%40s %1s %3s %3s %3s %3s %3s',
-   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', scalar @unpushed || '', '', '', '', '';
+   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', scalar @unpushed || '', scalar @unmerged || '', '', '', '';
    $i++;
 }
 
