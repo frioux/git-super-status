@@ -49,10 +49,41 @@ sub get_not_tracked {
    } split /\n/, qx(git branch -vv --no-color)
 }
 
+sub get_tracked {
+   map {
+      if (/^\*?\s+(\S+)\s+[a-f0-9]{7}\s\[(\S+)\]/) {
+         [ $1 => $2 ]
+      } else {
+         ()
+      }
+   } split /\n/, qx(git branch -vv --no-color)
+}
+
+sub unpushed_commits {
+   my @tracked = @_;
+
+   map {
+      my ($a, $b) = @$_;
+      my $cmd = qq(git log $b..$a --oneline --no-color );
+      $cmd, split /\n/, qx($cmd)
+   } @tracked
+}
+
+sub header {
+<<'END';
+D      dirty?
+!TP    non-tracking branches
+!PC    total unpushed commits
+!MB    total unmerged branches
+!RC    unreleased commits
+I      issues
+END
+}
+
 
 #    12345678901234567890123456789012345678901234567890123456789012345678901234567890
 #             1         2         3         4         5         6         7         8
-
+print header();
 for my $repo_info (@$data) {
    state $i = 0;
    print "\nRepository Name                          D !TP !PC  !MB  !RC   I\n\n"
@@ -62,12 +93,11 @@ for my $repo_info (@$data) {
 
    my @dirty = get_dirty();
    my @untracked = get_not_tracked();
-   #use Devel::Dwarn;
-   #Dwarn \@untracked;
-   no warnings;
+   my @unpushed = unpushed_commits(get_tracked());
    say sprintf
    #repo   D !TP !PC !MB !RC   I";
    '%40s %1s %3s %3s %3s %3s %3s',
-   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', '', '', '', '', '';
+   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', scalar @unpushed || '', '', '', '', '';
    $i++;
 }
+
