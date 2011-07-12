@@ -77,8 +77,9 @@ sub unmerged_branches {
 
 sub unreleased_commits {
    return (split /\n/, qx(git log --oneline --no-color )) unless split /\n/, qx(git tag);
-   chomp(my $last_tag = qx(git describe master --tags --abbrev=0));
-   split /\n/, qx(git log $last_tag..master --oneline --no-color )
+   chomp(my $master = qx(git config super-status.master));
+   chomp(my $last_tag = qx(git describe $master --tags --abbrev=0));
+   split /\n/, qx(git log $last_tag..$master --oneline --no-color )
 }
 
 sub header {
