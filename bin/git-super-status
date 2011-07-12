@@ -5,6 +5,7 @@ use warnings;
 
 use YAML::XS 'LoadFile';
 use File::pushd;
+use Term::ANSIColor;
 
 my $data = LoadFile('/home/frew/.gitgot');
 
@@ -121,18 +122,41 @@ sub hide_zeros {
    )
 }
 
+sub with_color {
+   my %data = @_;
+
+   return (
+      name       => colored(['yellow'], $data{name}       ),
+      dirty      => colored(['red']   , $data{dirty}      ),
+      untracked  => colored(['red']   , $data{untracked}  ),
+      unpushed   => colored(['red']   , $data{unpushed}   ),
+      unmerged   => colored(['red']   , $data{unmerged}   ),
+      unreleased => colored(['red']   , $data{unreleased} ),
+   )
+}
+
+sub pre_color_sprintf {
+   my %data = @_;
+
+   return (
+      name       => format_repo_name( $data{name}       ),
+      dirty      => sprintf('%3s',    $data{dirty}      ),
+      untracked  => sprintf('%3s',    $data{untracked}  ),
+      unpushed   => sprintf('%3s',    $data{unpushed}   ),
+      unmerged   => sprintf('%3s',    $data{unmerged}   ),
+      unreleased => sprintf('%3s',    $data{unreleased} ),
+   )
+}
+
 sub fromat {
    my %data = @_;
 
-   sprintf
-      #repo   D !TP !PC !MB !RC   I";
-      '%40s %1s %3s %3s %3s %3s %3s',
-      format_repo_name($data{name}), $data{dirty}, $data{untracked}, $data{unpushed}, $data{unmerged}, $data{unreleased}, '';
+   join ' ', $data{name}, $data{dirty}, $data{untracked}, $data{unpushed}, $data{unmerged}, $data{unreleased}, '';
 }
 
 for my $repo_info (@$data) {
    state $i = 0;
-   print "\nRepository Name                          D !TP !PC !MB !RC   I\n\n"
+   print "\nRepository Name                            D !TP !PC !MB !RC   I\n\n"
       if $i % 10 == 0;
 
    my $dir = pushd($repo_info->{path});
@@ -146,7 +170,7 @@ for my $repo_info (@$data) {
       unreleased => [ unreleased_commits() ],
    );
 
-   say fromat(hide_zeros(for_summary(%data)));
+   say fromat(with_color(pre_color_sprintf(hide_zeros(for_summary(%data)))));
 
    $i++;
 }
