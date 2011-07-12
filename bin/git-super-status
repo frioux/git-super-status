@@ -6,6 +6,7 @@ use warnings;
 use YAML::XS 'LoadFile';
 use File::pushd;
 use Term::ANSIColor;
+use Getopt::Long;
 
 my $data = LoadFile('/home/frew/.gitgot');
 
@@ -93,10 +94,21 @@ I      issues
 END
 }
 
+my $header      = 0;
+my $color       = 0;
+my $multiheader = 1;
+my $pretty      = 0;
+
+GetOptions(
+   'header|h'     => \$header,
+   'multiheader!' => \$multiheader,
+   'color!'       => \$color,
+   'pretty!'      => \$pretty,
+);
 
 #    12345678901234567890123456789012345678901234567890123456789012345678901234567890
 #             1         2         3         4         5         6         7         8
-print header();
+print header() if $header;
 
 sub for_summary {
    my %data = @_;
@@ -122,6 +134,14 @@ sub hide_zeros {
       unmerged   => $data{unmerged}   || '',
       unreleased => $data{unreleased} || '',
    )
+}
+
+sub color_value {
+   if ($_[0]) {
+      colored(['red'], $_[0])
+   } else {
+      colored(['green'], $_[0])
+   }
 }
 
 sub with_color {
@@ -159,7 +179,7 @@ sub fromat {
 for my $repo_info (@$data) {
    state $i = 0;
    print "\nRepository Name                            D !TP !PC !MB !RC   I\n\n"
-      if $i % 10 == 0;
+      if $i == 0 || ($multiheader && ( $i % 10 == 0 ));
 
    my $dir = pushd($repo_info->{path});
 
@@ -172,7 +192,11 @@ for my $repo_info (@$data) {
       unreleased => [ unreleased_commits() ],
    );
 
-   say fromat(with_color(pre_color_sprintf(hide_zeros(for_summary(%data)))));
+   %data = for_summary(%data);
+   %data = hide_zeros(%data) if $pretty;
+   %data = pre_color_sprintf(%data);
+   %data = with_color(%data) if $color;
+   say fromat(%data);
 
    $i++;
 }
