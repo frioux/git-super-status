@@ -1,0 +1,73 @@
+#!/usr/bin/env perl
+
+use 5.14.1;
+use warnings;
+
+use YAML::XS 'LoadFile';
+use File::pushd;
+
+my $data = LoadFile('/home/frew/.gitgot');
+
+use Devel::Dwarn;
+
+{
+   my $re = sprintf q<
+      ^
+      # $base
+      ( .{0,%i} )
+      (?:
+        # $fit
+        ( . )
+          |
+        # $cut
+        ( .{1,} )
+      )$
+      >, 39;
+
+   sub format_repo_name {
+      my $name = shift;
+      my ($base, $fit, $cut) = $name =~ /$re/x;
+      if (defined $fit) {
+        return ( "$base${fit}" . ( ' ' x ( 39 - length $base ) ) )
+      } elsif (!defined $cut) {
+        return ( $base . ( ' ' x ( 40 - length $base ) ) )
+      } else {
+        return "$base\x{2026}";
+      }
+   }
+}
+
+sub get_dirty { split /\0/, qx(git status --porcelain -z) }
+
+sub get_not_tracked {
+   map {
+      if (/^\*?\s+\S+\s+[a-f0-9]{7}\s\[/) {
+         ()
+      } else {
+         $_
+      }
+   } split /\n/, qx(git branch -vv --no-color)
+}
+
+
+#    12345678901234567890123456789012345678901234567890123456789012345678901234567890
+#             1         2         3         4         5         6         7         8
+
+for my $repo_info (@$data) {
+   state $i = 0;
+   print "\nRepository Name                          D !TP !PC  !MB  !RC   I\n\n"
+      if $i % 10 == 0;
+
+   my $dir = pushd($repo_info->{path});
+
+   my @dirty = get_dirty();
+   my @untracked = get_not_tracked();
+   #use Devel::Dwarn;
+   #Dwarn \@untracked;
+   no warnings;
+   say sprintf
+   #repo   D !TP !PC !MB !RC   I";
+   '%40s %1s %3s %3s %3s %3s %3s',
+   format_repo_name($repo_info->{name}), (@dirty ? 'Y':''), scalar @untracked || '', '', '', '', '', '';
+   $i++;
+}
