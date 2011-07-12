@@ -94,10 +94,12 @@ I      issues
 END
 }
 
-my $header      = 0;
-my $color       = 0;
-my $multiheader = 1;
-my $pretty      = 0;
+my %config = map { split /\n/, s/super-status\.//r, 2 } split /\0/, qx(git config -z --get-regexp super-status);
+
+my $header      = $config{header}      // 0;
+my $color       = $config{color}       // 0;
+my $multiheader = $config{multiheader} // 1;
+my $pretty      = $config{pretty}      // 0;
 
 GetOptions(
    'header|h'     => \$header,
