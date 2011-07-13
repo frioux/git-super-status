@@ -97,7 +97,9 @@ my $header      = $config{header}      // 0;
 my $color       = $config{color}       // 0;
 my $multiheader = $config{multiheader} // 1;
 my $pretty      = $config{pretty}      // 0;
+
 my $skip_good   = $config{'skip-good'} // 0;
+my $dirty       = $config{dirty};
 
 GetOptions(
    'header|h'     => \$header,
@@ -105,6 +107,7 @@ GetOptions(
    'color!'       => \$color,
    'skip-good!'   => \$skip_good,
    'pretty!'      => \$pretty,
+   'dirty!'       => \$dirty,
 );
 
 #    12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -177,10 +180,22 @@ sub fromat {
    join ' ', $data{name}, $data{dirty}, $data{untracked}, $data{unpushed}, $data{unmerged}, $data{unreleased}, '';
 }
 
-for my $repo_info (@$data) {
+sub si {
+   my ( $x, $y ) = @_;
+   no warnings;
+
+   if (defined $x) {
+      if ($x) {
+         next REPO if !scalar @$y
+      } else {
+         next REPO if scalar @$y
+      }
+   }
+
+}
+
+REPO: for my $repo_info (@$data) {
    state $i = 0;
-   print "\nRepository Name                            D !TP !PC !MB !RC   I\n\n"
-      if $i == 0 || ($multiheader && ( $i % 10 == 0 ));
 
    my $dir = pushd($repo_info->{path});
    local %config = map { split /\n/, s/super-status\.//r, 2 } split /\0/, qx(git config -z --get-regexp super-status);
@@ -188,18 +203,25 @@ for my $repo_info (@$data) {
 
    my %data = (
       name       => $repo_info->{name},
-      dirty      => [ get_dirty() ],
-      untracked  => [ get_not_tracked() ],
-      unpushed   => [ unpushed_commits(get_tracked()) ],
-      unmerged   => [ unmerged_branches() ],
-      unreleased => [ unreleased_commits() ],
    );
+
+   $data{dirty} = [ get_dirty() ];
+   si($dirty, $data{dirty});
+   $data{untracked} = [ get_not_tracked() ];
+   $data{unpushed}  = [ unpushed_commits(get_tracked()) ];
+   $data{unmerged}  = [ unmerged_branches() ];
+   $data{unreleased}= [ unreleased_commits() ];
 
    %data = for_summary(%data);
    next if $skip_good && !first { $_ } map $data{$_}, qw(dirty untracked unpushed unmerged unreleased);
+
    %data = hide_zeros(%data) if $pretty;
    %data = pre_color_sprintf(%data);
    %data = with_color(%data) if $color;
+
+   print "\nRepository Name                            D !TP !PC !MB !RC   I\n\n"
+      if $i == 0 || ($multiheader && ( $i % 10 == 0 ));
+
    say fromat(%data);
 
    $i++;
