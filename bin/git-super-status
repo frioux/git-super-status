@@ -93,6 +93,7 @@ I      issues
 END
 }
 
+my $alpha       = $config{alpha}       // 1;
 my $header      = $config{header}      // 0;
 my $color       = $config{color}       // 0;
 my $multiheader = $config{multiheader} // 1;
@@ -108,6 +109,7 @@ GetOptions(
    'skip-good!'   => \$skip_good,
    'pretty!'      => \$pretty,
    'dirty!'       => \$dirty,
+   'alpha'        => \$alpha,
 );
 
 #    12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -194,7 +196,7 @@ sub si {
 
 }
 
-REPO: for my $repo_info (@$data) {
+REPO: for my $repo_info (sort { lc $a->{name} cmp lc $b->{name} } @$data) {
    state $i = 0;
 
    my $dir = pushd($repo_info->{path});
